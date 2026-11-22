@@ -1,0 +1,239 @@
+#VRML_SIM R2025a utf8
+# ACIL-POD educational simulation, not certified rescue equipment.
+# ENU: local +X forward, +Y left, +Z up. All wheel positive motor velocities drive forward.
+# Wheel radius: 0.065 m. lid_motor/lid_sensor in radians: 0 closed, +1.22 upper limit.
+# front_sensor: one forward +X ray; identity lookup, 0..2 m. 2 m is saturation/no closer hit.
+# Entire world uses built-in Webots nodes; no external assets are required.
+
+WorldInfo {
+  title "ACIL-POD | Classroom demo"
+  info [ "Classroom rescue-pod demonstration" "Drive forward, stop on obstacle detection, then open the orange pod lid." ]
+  basicTimeStep 32
+  coordinateSystem "ENU"
+}
+Viewpoint { position 3 -3.35 2.55 orientation -.25342932 .11324458 .96070247 2.33059741 fieldOfView 0.72 }
+Background { skyColor [ 0.085 0.125 0.17 ] }
+DirectionalLight { direction -0.6 0.6 -1 intensity 1.35 ambientIntensity 0.4 castShadows TRUE }
+DirectionalLight { direction 0.65 -0.2 -0.55 color 0.69 0.81 1 intensity 0.62 }
+
+Solid {
+  name "arena floor"
+  translation 0 0 -0.045
+  children [
+    Shape { appearance PBRAppearance { baseColor .212 .271 .323 roughness 0.92 metalness 0 } geometry Box { size 4.8 3.5 0.09 } }
+    
+  ]
+  boundingObject Box { size 4.8 3.5 0.09 }
+}
+
+Solid {
+  name "left boundary"
+  translation 0 1.74 .045
+  children [
+    Shape { appearance PBRAppearance { baseColor .46 .53 .59 roughness 0.7 metalness 0.12 } geometry Box { size 4.8 .06 .09 } }
+    
+  ]
+  boundingObject Box { size 4.8 .06 .09 }
+}
+
+Solid {
+  name "right boundary"
+  translation 0 -1.74 .045
+  children [
+    Shape { appearance PBRAppearance { baseColor .46 .53 .59 roughness 0.7 metalness 0.12 } geometry Box { size 4.8 .06 .09 } }
+    
+  ]
+  boundingObject Box { size 4.8 .06 .09 }
+}
+
+Solid {
+  name "back boundary"
+  translation -2.37 0 .045
+  children [
+    Shape { appearance PBRAppearance { baseColor .46 .53 .59 roughness 0.7 metalness 0.12 } geometry Box { size .06 3.42 .09 } }
+    
+  ]
+  boundingObject Box { size .06 3.42 .09 }
+}
+
+Solid {
+  name "front boundary"
+  translation 2.37 0 .045
+  children [
+    Shape { appearance PBRAppearance { baseColor .46 .53 .59 roughness 0.7 metalness 0.12 } geometry Box { size .06 3.42 .09 } }
+    
+  ]
+  boundingObject Box { size .06 3.42 .09 }
+}
+
+# Decorative non-colliding lane markings and obstacle approach pad.
+
+Pose { translation -.05 .43 .0006 children [ Shape { appearance PBRAppearance { baseColor .34 .61 .71 roughness 0.75 metalness 0 } geometry Box { size 3.85 .025 .0012 } } ] }
+
+Pose { translation -.05 -.43 .0006 children [ Shape { appearance PBRAppearance { baseColor .34 .61 .71 roughness 0.75 metalness 0 } geometry Box { size 3.85 .025 .0012 } } ] }
+
+Pose { translation -1.46 0 .0006 children [ Shape { appearance PBRAppearance { baseColor .35 .8 .85 roughness 0.75 metalness 0 } geometry Box { size .038 .87 .0012 } } ] }
+
+Pose { translation .92 0 .0006 children [ Shape { appearance PBRAppearance { baseColor .40 .32 .21 roughness 0.75 metalness 0 } geometry Box { size .74 .78 .0012 } } ] }
+
+Pose { translation -1.64 0 .00065 children [ Shape { appearance PBRAppearance { baseColor .60 .67 .70 roughness 0.75 metalness 0 } geometry Box { size .12 .014 .0013 } } ] }
+
+Pose { translation -0.57 0 .00065 children [ Shape { appearance PBRAppearance { baseColor .60 .67 .70 roughness 0.75 metalness 0 } geometry Box { size .12 .014 .0013 } } ] }
+
+Pose { translation -0.27 0 .00065 children [ Shape { appearance PBRAppearance { baseColor .60 .67 .70 roughness 0.75 metalness 0 } geometry Box { size .12 .014 .0013 } } ] }
+
+Pose { translation 0.03 0 .00065 children [ Shape { appearance PBRAppearance { baseColor .60 .67 .70 roughness 0.75 metalness 0 } geometry Box { size .12 .014 .0013 } } ] }
+
+Pose { translation 0.33 0 .00065 children [ Shape { appearance PBRAppearance { baseColor .60 .67 .70 roughness 0.75 metalness 0 } geometry Box { size .12 .014 .0013 } } ] }
+
+DEF DEMO_OBSTACLE Solid {
+  name "demonstration obstacle"
+  translation .92 0 .11
+  children [
+    Shape { appearance PBRAppearance { baseColor .47 .38 .29 roughness 0.75 metalness 0 } geometry Box { size .32 .48 .22 } }
+    Pose { translation 0 0 .114 children [ Shape { appearance PBRAppearance { baseColor 1 .68 .13 roughness 0.75 metalness 0 } geometry Box { size .267 .42 .009 } } ] }
+  ]
+  boundingObject Box { size .32 .48 .22 }
+}
+
+DEF ACIL_POD Robot {
+  name "ACIL-POD"
+  controller "acil_pod"
+  window "acil_pod"
+  translation -1.02 0 .067
+  children [
+    Pose { translation 0 0 .039 children [ Shape { appearance PBRAppearance { baseColor .035 .72 .85 roughness 0.33 metalness 0.07 } geometry Box { size .43 .275 .05 } } ] }
+    Pose { translation 0 .124 .094 children [ Shape { appearance PBRAppearance { baseColor .035 .72 .85 roughness 0.33 metalness 0.07 } geometry Box { size .43 .026 .060 } } ] }
+    Pose { translation 0 -.124 .094 children [ Shape { appearance PBRAppearance { baseColor .035 .72 .85 roughness 0.33 metalness 0.07 } geometry Box { size .43 .026 .060 } } ] }
+    Pose { translation .201 0 .094 children [ Shape { appearance PBRAppearance { baseColor .035 .72 .85 roughness 0.33 metalness 0.07 } geometry Box { size .028 .223 .060 } } ] }
+    Pose { translation -.201 0 .094 children [ Shape { appearance PBRAppearance { baseColor .035 .72 .85 roughness 0.33 metalness 0.07 } geometry Box { size .028 .223 .060 } } ] }
+    Pose { translation 0 0 .066 children [ Shape { appearance PBRAppearance { baseColor .044 .17 .205 roughness 0.75 metalness 0 } geometry Box { size .358 .202 .009 } } ] }
+    Pose { translation .225 0 .049 children [ Shape { appearance PBRAppearance { baseColor .046 .085 .105 roughness 0.69 metalness 0.18 } geometry Box { size .031 .215 .029 } } ] }
+    DistanceSensor {
+      name "front_sensor"
+      translation .249 0 .083
+      type "generic"
+      numberOfRays 1
+      lookupTable [ 0 0 0, 2 2 0 ]
+      children [
+        Shape { appearance PBRAppearance { baseColor .046 .085 .105 roughness 0.69 metalness 0.18 } geometry Box { size .032 .063 .033 } }
+        Pose {
+          translation .016 0 0
+          rotation 0 1 0 1.57079632679
+          children [
+            Shape { appearance PBRAppearance { baseColor .62 .87 .88 roughness 0.26 metalness 0.22 } geometry Cylinder { radius .010 height .006 subdivision 18 } }
+          ]
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { anchor 0.14 0.161 0 axis 0 1 0 }
+      device [ RotationalMotor { name "wheel_fl" maxVelocity 18 maxTorque 1.2 } ]
+      endPoint Solid {
+        name "wheel fl"
+        translation 0.14 0.161 0
+        rotation 1 0 0 1.57079632679
+        children [
+          Shape { appearance PBRAppearance { baseColor .032 .043 .054 roughness 0.88 metalness 0 } geometry Cylinder { radius .065 height .040 subdivision 36 } }
+          Pose {
+            translation 0 0 -0.022
+            children [ Shape { appearance PBRAppearance { baseColor .28 .41 .49 roughness 0.38 metalness 0.3 } geometry Cylinder { radius .035 height .009 subdivision 24 } } ]
+          }
+        ]
+        boundingObject Cylinder { radius .065 height .040 subdivision 36 }
+        physics Physics { density -1 mass .09 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { anchor -0.14 0.161 0 axis 0 1 0 }
+      device [ RotationalMotor { name "wheel_rl" maxVelocity 18 maxTorque 1.2 } ]
+      endPoint Solid {
+        name "wheel rl"
+        translation -0.14 0.161 0
+        rotation 1 0 0 1.57079632679
+        children [
+          Shape { appearance PBRAppearance { baseColor .032 .043 .054 roughness 0.88 metalness 0 } geometry Cylinder { radius .065 height .040 subdivision 36 } }
+          Pose {
+            translation 0 0 -0.022
+            children [ Shape { appearance PBRAppearance { baseColor .28 .41 .49 roughness 0.38 metalness 0.3 } geometry Cylinder { radius .035 height .009 subdivision 24 } } ]
+          }
+        ]
+        boundingObject Cylinder { radius .065 height .040 subdivision 36 }
+        physics Physics { density -1 mass .09 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { anchor 0.14 -0.161 0 axis 0 1 0 }
+      device [ RotationalMotor { name "wheel_fr" maxVelocity 18 maxTorque 1.2 } ]
+      endPoint Solid {
+        name "wheel fr"
+        translation 0.14 -0.161 0
+        rotation 1 0 0 1.57079632679
+        children [
+          Shape { appearance PBRAppearance { baseColor .032 .043 .054 roughness 0.88 metalness 0 } geometry Cylinder { radius .065 height .040 subdivision 36 } }
+          Pose {
+            translation 0 0 0.022
+            children [ Shape { appearance PBRAppearance { baseColor .28 .41 .49 roughness 0.38 metalness 0.3 } geometry Cylinder { radius .035 height .009 subdivision 24 } } ]
+          }
+        ]
+        boundingObject Cylinder { radius .065 height .040 subdivision 36 }
+        physics Physics { density -1 mass .09 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { anchor -0.14 -0.161 0 axis 0 1 0 }
+      device [ RotationalMotor { name "wheel_rr" maxVelocity 18 maxTorque 1.2 } ]
+      endPoint Solid {
+        name "wheel rr"
+        translation -0.14 -0.161 0
+        rotation 1 0 0 1.57079632679
+        children [
+          Shape { appearance PBRAppearance { baseColor .032 .043 .054 roughness 0.88 metalness 0 } geometry Cylinder { radius .065 height .040 subdivision 36 } }
+          Pose {
+            translation 0 0 0.022
+            children [ Shape { appearance PBRAppearance { baseColor .28 .41 .49 roughness 0.38 metalness 0.3 } geometry Cylinder { radius .035 height .009 subdivision 24 } } ]
+          }
+        ]
+        boundingObject Cylinder { radius .065 height .040 subdivision 36 }
+        physics Physics { density -1 mass .09 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        # Positive opening lifts the forward edge around the rear hinge.
+        anchor -.205 0 .127
+        axis 0 -1 0
+        minStop 0
+        maxStop 1.22
+        dampingConstant .02
+      }
+      device [
+        RotationalMotor { name "lid_motor" minPosition 0 maxPosition 1.22 maxVelocity 2 maxTorque 1 }
+        PositionSensor { name "lid_sensor" }
+      ]
+      endPoint Solid {
+        name "orange hinged lid"
+        translation -.205 0 .127
+        children [
+          Pose { translation .205 0 .012 children [ Shape { appearance PBRAppearance { baseColor 1 .31 .045 roughness 0.35 metalness 0.05 } geometry Box { size .424 .279 .023 } } ] }
+          Pose { translation .315 0 .029 children [ Shape { appearance PBRAppearance { baseColor .046 .085 .105 roughness 0.69 metalness 0.18 } geometry Box { size .038 .085 .015 } } ] }
+          Pose { translation .17 0 .025 children [ Shape { appearance PBRAppearance { baseColor 1 .91 .74 roughness 0.68 metalness 0 } geometry Box { size .085 .025 .003 } } ] }
+          Pose { translation .17 0 .0251 children [ Shape { appearance PBRAppearance { baseColor 1 .91 .74 roughness 0.68 metalness 0 } geometry Box { size .025 .085 .003 } } ] }
+        ]
+        boundingObject Pose { translation .205 0 .012 children [ Box { size .424 .279 .023 } ] }
+        physics Physics { density -1 mass .12 }
+      }
+    }
+  ]
+  boundingObject Group {
+    children [
+      Pose { translation 0 0 .039 children [ Box { size .43 .254 .05 } ] }
+      Pose { translation 0 .124 .094 children [ Box { size .43 .026 .060 } ] }
+      Pose { translation 0 -.124 .094 children [ Box { size .43 .026 .060 } ] }
+      Pose { translation .201 0 .094 children [ Box { size .028 .223 .060 } ] }
+      Pose { translation -.201 0 .094 children [ Box { size .028 .223 .060 } ] }
+      Pose { translation .225 0 .049 children [ Box { size .031 .215 .029 } ] }
+    ]
+  }
+  physics Physics { density -1 mass 1.15 }
+}
