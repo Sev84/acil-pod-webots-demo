@@ -1,0 +1,8 @@
+.git
+__pycache__
+*.pyc
+*.wbproj
+*.zip
+*.jpg
+*.png
+*.mp4
