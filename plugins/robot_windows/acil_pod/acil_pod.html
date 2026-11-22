@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACIL-POD kumandası</title>
+<style>
+  :root{color-scheme:dark;font:16px system-ui;background:#10222d;color:#eefcff}
+  body{margin:0 auto;padding:1rem;max-width:34rem}h1{font-size:1.2rem}
+  p{line-height:1.4}fieldset{border:1px solid #7393a2;border-radius:.6rem;margin:.7rem 0;padding:.8rem}
+  .drive{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+  button,input{box-sizing:border-box;min-height:2.8rem;border:1px solid #6c98ab;border-radius:.45rem;font:inherit}
+  button{font-weight:700;background:#184457;color:#fff;touch-action:none}button:active{background:#28758b}
+  :focus-visible{outline:3px solid #ffac65;outline-offset:2px}button:disabled{opacity:.55}
+  #stop{background:#8b3025}.lid{display:flex;flex-wrap:wrap;gap:.45rem}.lid input{width:8rem;padding:.3rem}
+  .data{font-variant-numeric:tabular-nums}.hint{color:#b9d5e1;font-size:.86rem}
+</style>
+</head>
+<body>
+<h1>ACIL-POD · Simülasyon kumandası</h1>
+<p class="hint">Webots sahnesini oynatın. Hareket düğmesini basılı tutun; bırakınca durur. Bu yalnızca eğitim simülasyonudur.</p>
+<fieldset><legend>Sürüş</legend><div class="drive">
+<span></span><button type="button" data-move="W" disabled>↑ İleri</button><span></span>
+<button type="button" data-move="A" disabled>← Sol</button><button type="button" id="stop" disabled>Dur</button><button type="button" data-move="D" disabled>Sağ →</button>
+<span></span><button type="button" data-move="S" disabled>↓ Geri</button><span></span>
+</div></fieldset>
+<fieldset><legend>Teslim kapağı</legend><form id="code-form" class="lid">
+<input id="code" aria-label="Deneme kodu" inputmode="numeric" maxlength="12" placeholder="Demo kodu 1234" autocomplete="off">
+<button type="submit" id="open" disabled>Kodu dene</button><button type="button" id="close" disabled>Kapak kapat</button>
+</form><p class="hint">Hareket sırasında aracı önce durdurun. Demo kodu gerçek parola değildir.</p></fieldset>
+<p id="metrics" class="data">Sensör ölçümü bekleniyor.</p>
+<p id="status" role="status" class="hint">Robot penceresi bağlantısı hazırlanıyor…</p>
+<script type="module">
+import RobotWindow from 'https://cyberbotics.com/wwi/R2025a/RobotWindow.js';
+const rw = new RobotWindow();
+const byId = id => document.getElementById(id);
+const controls = document.querySelectorAll('button');
+let interval = null, active = null, lastTelemetry = 0;
+const messages = {
+  ENGEL:'Engel görüldü: araç durdu.', SENSOR:'Sensör değeri geçersiz: araç durdu.',
+  'KOMUT ZAMAN ASIMI':'Komut kesildi: araç durdu.', DUR:'Araç durdu.',
+  'KAPAK KAPANIYOR':'Kapak kapanıyor.', 'DOGRU DEMO KODU; KAPAK ACIK':'Doğru demo kodu: kapak açılıyor.',
+  'ARAC DURDU; KODU YENIDEN GIRIN':'Araç durdu. Kodu yeniden girin.',
+  'YANLIS KOD; KAPAK KONUMU DEGISMEDI':'Yanlış kod; kapak konumu değişmedi.',
+  'KAPAK HAREKET EDIYOR':'Kapak hareket ediyor.', 'HAREKET ENGELLENDI':'Engel veya kapak kilidi nedeniyle hareket engellendi.'
+};
+function send(value) {
+  if (performance.now() - lastTelemetry < 850 && rw.socket.readyState === WebSocket.OPEN) rw.send(value);
+}
+function stop(force = false) {
+  if (interval !== null) window.clearInterval(interval);
+  interval = null;
+  if (active || force) send('X');
+  active = null;
+}
+function hold(direction) {
+  if (active === direction) return;
+  if (interval !== null) window.clearInterval(interval);
+  active = direction;
+  send(direction);
+  interval = window.setInterval(() => send(direction), 120);
+}
+rw.receive = message => {
+  let status;
+  try { status = JSON.parse(message); } catch { return; }
+  if (!status || typeof status.moving !== 'boolean') return;
+  lastTelemetry = performance.now();
+  controls.forEach(b => b.disabled = false);
+  const range = typeof status.range === 'number' ? status.range.toFixed(2)+' m' : '—';
+  const angle = typeof status.angle === 'number' ? (status.angle*180/Math.PI).toFixed(0)+'°' : '—';
+  byId('metrics').textContent = 'Ön mesafe: '+range+' · Kapak: '+angle+' · '+(status.moving?'Hareketli':'Duruyor');
+  if (messages[status.status]) byId('status').textContent = messages[status.status];
+  else if (/bağlantısı|durakladı/.test(byId('status').textContent)) byId('status').textContent = 'Simülasyona bağlı.';
+};
+document.querySelectorAll('[data-move]').forEach(button => {
+  button.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    button.setPointerCapture(event.pointerId);
+    hold(button.dataset.move);
+  });
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type =>
+    button.addEventListener(type, () => { if (active === button.dataset.move) stop(); }));
+  button.addEventListener('keydown', event => {
+    if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); hold(button.dataset.move); }
+  });
+  button.addEventListener('keyup', event => {
+    if ((event.key === ' ' || event.key === 'Enter') && active === button.dataset.move) stop();
+  });
+});
+byId('stop').addEventListener('click', () => stop(true));
+byId('close').addEventListener('click', () => { if (active) stop(); send('C'); });
+byId('code-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const code = byId('code').value;
+  byId('code').value = '';
+  if (/^\d{1,12}$/.test(code)) send('CODE:'+code);
+});
+window.addEventListener('blur', () => stop());
+window.setInterval(() => {
+  if (lastTelemetry && performance.now() - lastTelemetry > 850) {
+    stop();
+    controls.forEach(b => b.disabled = true);
+    byId('status').textContent = 'Bağlantı veya simülasyon durakladı; komutlar devre dışı.';
+  }
+}, 250);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+</script>
+</body>
+</html>
